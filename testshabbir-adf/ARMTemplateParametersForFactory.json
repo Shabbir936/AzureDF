@@ -5,7 +5,19 @@
 		"factoryName": {
 			"value": "testshabbir-adf"
 		},
+		"AzureDataLakeStorage1_accountKey": {
+			"value": ""
+		},
 		"AzureSqlDatabase1_connectionString": {
+			"value": ""
+		},
+		"Snowflake1_connectionString": {
+			"value": ""
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"value": "https://testsashabbir.dfs.core.windows.net/"
+		},
+		"BlobStorage1_sasUri": {
 			"value": ""
 		}
 	}
