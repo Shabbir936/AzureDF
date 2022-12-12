@@ -1,5 +1,5 @@
 {
-	"name": "PL_SQL_to_Landing",
+	"name": "PL_Landing_to_SF",
 	"properties": {
 		"activities": [
 			{
@@ -60,36 +60,35 @@
 							"userProperties": [],
 							"typeProperties": {
 								"source": {
-									"type": "AzureSqlSource",
-									"queryTimeout": "02:00:00",
-									"partitionOption": "None"
+									"type": "ParquetSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									}
 								},
 								"sink": {
-									"type": "ParquetSink",
-									"storeSettings": {
-										"type": "AzureBlobFSWriteSettings"
-									},
-									"formatSettings": {
-										"type": "ParquetWriteSettings"
+									"type": "SnowflakeSink",
+									"importSettings": {
+										"type": "SnowflakeImportCopyCommand"
 									}
 								},
-								"enableStaging": false,
-								"translator": {
-									"type": "TabularTranslator",
-									"typeConversion": true,
-									"typeConversionSettings": {
-										"allowDataTruncation": true,
-										"treatBooleanAsNumber": false
-									}
+								"enableStaging": true,
+								"stagingSettings": {
+									"linkedServiceName": {
+										"referenceName": "BlobStorage1",
+										"type": "LinkedServiceReference"
+									},
+									"path": "staging"
 								}
 							},
 							"inputs": [
 								{
-									"referenceName": "AZ_SQL_SalesLT",
+									"referenceName": "ADLS_Landing_Parquet",
 									"type": "DatasetReference",
 									"parameters": {
-										"tablename": {
-											"value": "@item().table_name",
+										"filename": {
+											"value": "@concat(item().table_name,'/',item().table_name,'.parquet')",
 											"type": "Expression"
 										}
 									}
@@ -97,11 +96,11 @@
 							],
 							"outputs": [
 								{
-									"referenceName": "ADLS_Landing_Parquet",
+									"referenceName": "SF_Sink",
 									"type": "DatasetReference",
 									"parameters": {
-										"filename": {
-											"value": "@concat(item().table_name,'/',item().table_name,'.parquet')",
+										"table_name": {
+											"value": "@toUpper(item().table_name)",
 											"type": "Expression"
 										}
 									}

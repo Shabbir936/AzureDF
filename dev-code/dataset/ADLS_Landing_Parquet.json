@@ -19,6 +19,10 @@
 					"value": "@dataset().filename",
 					"type": "Expression"
 				},
+				"folderPath": {
+					"value": "@concat('AdventureWorks/',string(utcNow('MM-dd-yyyy')))",
+					"type": "Expression"
+				},
 				"fileSystem": "landing"
 			},
 			"compressionCodec": "snappy"
