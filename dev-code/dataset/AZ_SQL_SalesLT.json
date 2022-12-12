@@ -1,5 +1,5 @@
 {
-	"name": "AZ_SQL",
+	"name": "AZ_SQL_SalesLT",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "AzureSqlDatabase1",
