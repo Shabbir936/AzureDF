@@ -90,6 +90,46 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/ADLS_Landing_CSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDataLakeStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().filename",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@concat('AdventureWorks/CSV/',string(utcnow('MM-dd-yyyy')))",
+							"type": "Expression"
+						},
+						"fileSystem": "landing"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDataLakeStorage1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/ADLS_Landing_Parquet')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -239,7 +279,7 @@
 							"scripts": [
 								{
 									"type": "Query",
-									"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where table_name = 'Product'"
+									"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where table_name = 'Product' OR active_flag='True'"
 								}
 							],
 							"scriptBlockExecutionTimeout": "02:00:00"
@@ -277,11 +317,14 @@
 									"userProperties": [],
 									"typeProperties": {
 										"source": {
-											"type": "ParquetSource",
+											"type": "DelimitedTextSource",
 											"storeSettings": {
 												"type": "AzureBlobFSReadSettings",
 												"recursive": true,
 												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
 											}
 										},
 										"sink": {
@@ -301,11 +344,11 @@
 									},
 									"inputs": [
 										{
-											"referenceName": "ADLS_Landing_Parquet",
+											"referenceName": "ADLS_Landing_CSV",
 											"type": "DatasetReference",
 											"parameters": {
 												"filename": {
-													"value": "@concat(item().table_name,'/',item().table_name,'.parquet')",
+													"value": "@concat(item().table_name,'/',item().table_name,'.csv')",
 													"type": "Expression"
 												}
 											}
@@ -336,7 +379,7 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/Snowflake1')]",
-				"[concat(variables('factoryId'), '/datasets/ADLS_Landing_Parquet')]",
+				"[concat(variables('factoryId'), '/datasets/ADLS_Landing_CSV')]",
 				"[concat(variables('factoryId'), '/datasets/SF_Sink')]",
 				"[concat(variables('factoryId'), '/linkedServices/BlobStorage1')]"
 			]
@@ -367,7 +410,7 @@
 							"scripts": [
 								{
 									"type": "Query",
-									"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where table_name = 'Product'"
+									"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where active_flag='True'"
 								}
 							],
 							"scriptBlockExecutionTimeout": "02:00:00"
@@ -467,6 +510,136 @@
 				"[concat(variables('factoryId'), '/linkedServices/Snowflake1')]",
 				"[concat(variables('factoryId'), '/datasets/AZ_SQL_SalesLT')]",
 				"[concat(variables('factoryId'), '/datasets/ADLS_Landing_Parquet')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_SQL_to_Landing_copy1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Script1",
+						"type": "Script",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"linkedServiceName": {
+							"referenceName": "Snowflake1",
+							"type": "LinkedServiceReference"
+						},
+						"typeProperties": {
+							"scripts": [
+								{
+									"type": "Query",
+									"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where active_flag='True'"
+								}
+							],
+							"scriptBlockExecutionTimeout": "02:00:00"
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Script1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Script1').output.resultSets[0].rows",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "AZ_SQL_SalesLT",
+											"type": "DatasetReference",
+											"parameters": {
+												"tablename": {
+													"value": "@item().table_name",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ADLS_Landing_CSV",
+											"type": "DatasetReference",
+											"parameters": {
+												"filename": {
+													"value": "@concat(item().table_name,'/',item().table_name,'.csv')",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Snowflake1')]",
+				"[concat(variables('factoryId'), '/datasets/AZ_SQL_SalesLT')]",
+				"[concat(variables('factoryId'), '/datasets/ADLS_Landing_CSV')]"
 			]
 		}
 	]
