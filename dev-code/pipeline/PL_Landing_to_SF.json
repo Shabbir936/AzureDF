@@ -1,5 +1,5 @@
 {
-	"name": "pipeline1",
+	"name": "PL_Landing_to_SF",
 	"properties": {
 		"activities": [
 			{
@@ -22,7 +22,7 @@
 					"scripts": [
 						{
 							"type": "Query",
-							"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where active_flag = 'True'"
+							"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where table_name = 'Product' OR active_flag='True'"
 						}
 					],
 					"scriptBlockExecutionTimeout": "02:00:00"
@@ -60,36 +60,38 @@
 							"userProperties": [],
 							"typeProperties": {
 								"source": {
-									"type": "AzureSqlSource",
-									"queryTimeout": "02:00:00",
-									"partitionOption": "None"
-								},
-								"sink": {
-									"type": "ParquetSink",
+									"type": "DelimitedTextSource",
 									"storeSettings": {
-										"type": "AzureBlobFSWriteSettings"
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
 									},
 									"formatSettings": {
-										"type": "ParquetWriteSettings"
+										"type": "DelimitedTextReadSettings"
 									}
 								},
-								"enableStaging": false,
-								"translator": {
-									"type": "TabularTranslator",
-									"typeConversion": true,
-									"typeConversionSettings": {
-										"allowDataTruncation": true,
-										"treatBooleanAsNumber": false
+								"sink": {
+									"type": "SnowflakeSink",
+									"importSettings": {
+										"type": "SnowflakeImportCopyCommand"
 									}
+								},
+								"enableStaging": true,
+								"stagingSettings": {
+									"linkedServiceName": {
+										"referenceName": "BlobStorage1",
+										"type": "LinkedServiceReference"
+									},
+									"path": "staging"
 								}
 							},
 							"inputs": [
 								{
-									"referenceName": "AZ_SQL_SalesLT",
+									"referenceName": "ADLS_Landing_CSV",
 									"type": "DatasetReference",
 									"parameters": {
-										"tablename": {
-											"value": "@item().table_name",
+										"filename": {
+											"value": "@concat(item().table_name,'/',item().table_name,'.csv')",
 											"type": "Expression"
 										}
 									}
@@ -97,11 +99,11 @@
 							],
 							"outputs": [
 								{
-									"referenceName": "ADLS_Landing_Parquet",
+									"referenceName": "SF_Sink",
 									"type": "DatasetReference",
 									"parameters": {
-										"filename": {
-											"value": "@item()",
+										"table_name": {
+											"value": "@toUpper(item().table_name)",
 											"type": "Expression"
 										}
 									}
