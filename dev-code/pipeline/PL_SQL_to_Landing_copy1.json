@@ -1,5 +1,5 @@
 {
-	"name": "PL_Landing_to_SF",
+	"name": "PL_SQL_to_Landing_copy1",
 	"properties": {
 		"activities": [
 			{
@@ -22,7 +22,7 @@
 					"scripts": [
 						{
 							"type": "Query",
-							"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where table_name = 'Product' OR active_flag='True'"
+							"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where active_flag='True'"
 						}
 					],
 					"scriptBlockExecutionTimeout": "02:00:00"
@@ -60,38 +60,38 @@
 							"userProperties": [],
 							"typeProperties": {
 								"source": {
-									"type": "DelimitedTextSource",
-									"storeSettings": {
-										"type": "AzureBlobFSReadSettings",
-										"recursive": true,
-										"enablePartitionDiscovery": false
-									},
-									"formatSettings": {
-										"type": "DelimitedTextReadSettings"
-									}
+									"type": "AzureSqlSource",
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
 								},
 								"sink": {
-									"type": "SnowflakeSink",
-									"importSettings": {
-										"type": "SnowflakeImportCopyCommand"
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
 									}
 								},
-								"enableStaging": true,
-								"stagingSettings": {
-									"linkedServiceName": {
-										"referenceName": "BlobStorage1",
-										"type": "LinkedServiceReference"
-									},
-									"path": "staging"
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
 								}
 							},
 							"inputs": [
 								{
-									"referenceName": "ADLS_Landing_CSV",
+									"referenceName": "AZ_SQL_SalesLT",
 									"type": "DatasetReference",
 									"parameters": {
-										"filename": {
-											"value": "@concat(item().table_name,'/',item().table_name,'.csv')",
+										"tablename": {
+											"value": "@item().table_name",
 											"type": "Expression"
 										}
 									}
@@ -99,11 +99,11 @@
 							],
 							"outputs": [
 								{
-									"referenceName": "SF_Sink",
+									"referenceName": "ADLS_Landing_CSV",
 									"type": "DatasetReference",
 									"parameters": {
-										"table_name": {
-											"value": "@toUpper(item().table_name)",
+										"filename": {
+											"value": "@concat(item().table_name,'/',item().table_name,'.csv')",
 											"type": "Expression"
 										}
 									}

@@ -22,7 +22,7 @@
 					"scripts": [
 						{
 							"type": "Query",
-							"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where table_name = 'Product'"
+							"text": "select table_name from HNBTEST.PUBLIC.CONTROL_TABLE  where active_flag='True'"
 						}
 					],
 					"scriptBlockExecutionTimeout": "02:00:00"
