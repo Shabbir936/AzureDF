@@ -1,0 +1,9 @@
+{
+	"name": "testshabbir-adf",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "0ded6e2e-7d8a-4cf7-88fc-2155beaf09e4",
+		"tenantId": "d202df2f-beee-44b6-af6a-fb6358dd30fb"
+	}
+}
