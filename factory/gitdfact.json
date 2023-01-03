@@ -1,0 +1,9 @@
+{
+	"name": "gitdfact",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "c063063f-327a-465a-905f-a1070e811029",
+		"tenantId": "957c6e94-c812-47e5-bafa-c7d4c7844c71"
+	}
+}
